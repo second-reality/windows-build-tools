@@ -3,6 +3,9 @@
 set -euo pipefail
 
 export RUSTFLAGS="--deny warnings"
+echo "format code"
 cargo fmt
+echo "build"
 cargo build
+echo "run clippy"
 cargo clippy
