@@ -1,5 +1,18 @@
-use std::env;
+extern crate clap;
+
+use clap::Command;
 
 fn main() {
-    let _args: Vec<String> = env::args().collect();
+    let m = Command::new("wbt")
+        .about("Use windows build tools")
+        .subcommand_required(true)
+        .subcommand(Command::new("list-packages"))
+        .get_matches();
+
+    let (command, _) = m.subcommand().expect("supposed to be required");
+
+    match command {
+        "list-packages" => todo!(),
+        _ => panic!("subcommand {command} not expected"),
+    }
 }
