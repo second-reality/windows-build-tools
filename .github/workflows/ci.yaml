@@ -22,5 +22,8 @@ jobs:
         with:
           toolchain: 1.59
 
+      - name: is formatted?
+        run: cargo fmt --check
+
       - name: run check
         run: ./check
