@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+export RUSTFLAGS="--deny warnings"
+cargo fmt
+cargo build
+cargo clippy
