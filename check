@@ -2,7 +2,10 @@
 
 set -euo pipefail
 
+script_dir=$(dirname $(readlink -f $0))
+
 export RUSTFLAGS="--deny warnings"
+export CARGO_TARGET_DIR="$script_dir/target/check"
 echo "format code"
 cargo fmt
 echo "build"
