@@ -1,36 +1,78 @@
 use log::info;
-use serde_json::Value;
+use serde::Deserialize;
 
 const CATALOG_NAME: &str = "VisualStudio.vsman";
 const MANIFEST_ID: &str = "Microsoft.VisualStudio.Manifests.VisualStudio";
 const CHANNEL_URL: &str = "https://aka.ms/vs/17/release/channel";
 
-fn get_catalog() -> serde_json::Value {
+#[derive(Deserialize, Debug)]
+struct Payload {
+    #[serde(rename = "fileName")]
+    name: String,
+    url: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct ChannelItem {
+    id: String,
+    payloads: Option<Vec<Payload>>,
+}
+
+#[derive(Deserialize, Debug)]
+struct ChannelInfo {
+    #[serde(rename = "channelItems")]
+    items: Vec<ChannelItem>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Package {
+    id: String,
+    language: Option<String>,
+}
+
+impl Package {
+    fn is_true_package(&self) -> bool {
+        self.language.is_none()
+    }
+}
+
+#[derive(Deserialize, Debug)]
+struct Catalog {
+    packages: Vec<Package>,
+}
+
+fn get_catalog() -> Catalog {
     let url = CHANNEL_URL;
 
     info!("download channel info from {url}");
 
     let channel_info = reqwest::blocking::get(url).unwrap().text().unwrap();
-    let channel_info: Value = serde_json::from_str(&channel_info).unwrap();
+    let channel_info: ChannelInfo = serde_json::from_str(&channel_info).unwrap();
 
-    let items = channel_info["channelItems"].as_array().unwrap();
-    let manifest = items.first().unwrap();
-
-    assert_eq!(manifest["id"].as_str().unwrap(), MANIFEST_ID);
-    let payload = manifest["payloads"].as_array().unwrap().first().unwrap();
-    assert_eq!(payload["fileName"].as_str().unwrap(), CATALOG_NAME);
-    let catalog_url = payload["url"].as_str().unwrap();
+    let manifest = channel_info
+        .items
+        .iter()
+        .find(|i| i.id == MANIFEST_ID)
+        .unwrap();
+    let payload = manifest
+        .payloads
+        .iter()
+        .flatten()
+        .find(|p| p.name == CATALOG_NAME)
+        .unwrap();
+    let catalog_url = &payload.url;
 
     info!("download catalog from {catalog_url}");
     let catalog = reqwest::blocking::get(catalog_url).unwrap().text().unwrap();
-    let catalog: Value = serde_json::from_str(&catalog).unwrap();
 
-    catalog
+    serde_json::from_str(&catalog).unwrap()
 }
 
 pub fn list_packages() {
     let catalog = get_catalog();
 
-    let packages = serde_json::to_string_pretty(&catalog["packages"]).unwrap();
-    println!("{packages}");
+    for p in catalog.packages.iter().filter(|p| p.is_true_package()) {
+        let name = &p.id;
+        println!("package: {name}");
+    }
 }
