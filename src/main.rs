@@ -1,6 +1,6 @@
 use std::env;
 
 fn main() {
-    broken
+    brokenagain
     let _args: Vec<String> = env::args().collect();
 }
