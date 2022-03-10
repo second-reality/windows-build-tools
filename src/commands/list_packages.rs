@@ -81,6 +81,6 @@ pub fn list_packages() {
             .map(|(dep, _)| dep.clone())
             .collect::<Vec<_>>()
             .join(", ");
-        println!("package: {name} (depends on: [{deps}])");
+        println!("{name} (depends on: [{deps}])");
     }
 }
