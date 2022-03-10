@@ -9,3 +9,5 @@ echo "build"
 cargo build
 echo "run clippy"
 cargo clippy
+echo "run test"
+cargo test
