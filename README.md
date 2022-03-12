@@ -1,3 +1,3 @@
 # windows-build-tools
 
-Build easily for windows
+Build easily using windows build tools
