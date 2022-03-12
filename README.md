@@ -1,2 +1,2 @@
 # windows-build-tools
-Build easily for windows 
+Build easily for windows
