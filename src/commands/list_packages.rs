@@ -1,4 +1,4 @@
-use crate::commands::catalog::get_catalog;
+use super::catalog::get_catalog;
 use std::collections::HashMap;
 
 pub fn run() {
