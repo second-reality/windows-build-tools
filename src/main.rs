@@ -12,12 +12,14 @@ fn main() {
         .about("Use windows build tools")
         .subcommand_required(true)
         .subcommand(Command::new("list-packages"))
+        .subcommand(Command::new("list-toolchains"))
         .get_matches();
 
     let (command, _) = m.subcommand().expect("supposed to be required");
 
     match command {
-        "list-packages" => commands::list_packages::list_packages(),
+        "list-packages" => commands::list_packages::run(),
+        "list-toolchains" => commands::list_toolchains::run(),
         _ => panic!("subcommand {command} not expected"),
     }
 }
