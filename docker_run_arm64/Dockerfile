@@ -17,6 +17,5 @@ RUN cd /tmp && echo "Download wine-${WINE_VERSION}..." && \
     make -j$(nproc) install &&\
     rm -rf /tmp/*
 
-ENV WINEDEBUG=-all
 # check it works
 RUN wine cmd /c "echo Hello World! ($(wine --version))"
