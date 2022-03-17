@@ -4,7 +4,7 @@ use std::collections::HashMap;
 pub fn run() {
     let catalog = get_catalog();
 
-    for p in catalog.packages.iter().filter(|p| p.is_true_package()) {
+    for p in catalog.packages.iter().filter(|p| p.is_english()) {
         let name = &p.id;
         let deps = p
             .dependencies

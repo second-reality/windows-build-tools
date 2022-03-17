@@ -13,6 +13,7 @@ fn main() {
         .subcommand_required(true)
         .subcommand(Command::new("list-packages"))
         .subcommand(Command::new("list-toolchains"))
+        .subcommand(Command::new("get-toolchain"))
         .get_matches();
 
     let (command, _) = m.subcommand().expect("supposed to be required");
@@ -20,6 +21,7 @@ fn main() {
     match command {
         "list-packages" => commands::list_packages::run(),
         "list-toolchains" => commands::list_toolchains::run(),
+        "get-toolchain" => commands::get_toolchain::run(),
         _ => panic!("subcommand {command} not expected"),
     }
 }
