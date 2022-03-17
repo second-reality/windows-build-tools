@@ -1,6 +1,6 @@
 use log::{info, warn};
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 const TOOLCHAIN_PREFIX: &str = "Microsoft.VC.";
 const CATALOG_NAME: &str = "VisualStudio.vsman";
@@ -9,11 +9,12 @@ const CHANNEL_URL: &str = "https://aka.ms/vs/17/release/channel";
 const X64: &str = "x64";
 const ENGLISH: &str = "en-US";
 
-#[derive(Deserialize, Debug)]
-struct Payload {
+#[derive(Deserialize, Debug, Clone)]
+pub struct Payload {
     #[serde(rename = "fileName")]
-    name: String,
-    url: String,
+    pub name: String,
+    pub url: String,
+    pub sha256: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -38,6 +39,7 @@ pub struct Package {
     #[serde(rename = "machineArch")]
     pub machine_arch: Option<String>,
     pub dependencies: Option<HashMap<String, serde_json::Value>>, // name, version (string or map)
+    pub payloads: Option<Vec<Payload>>,
 }
 
 impl Package {
@@ -53,6 +55,11 @@ impl Package {
 
     pub fn is_toolchain(&self) -> bool {
         self.id.starts_with(TOOLCHAIN_PREFIX)
+    }
+
+    pub fn is_matching_toolchain_version(&self, version: &str) -> bool {
+        let prefix = format!("{TOOLCHAIN_PREFIX}{version}");
+        self.id.starts_with(&prefix)
     }
 
     pub fn toolchain_version(&self) -> Option<String> {
@@ -130,7 +137,50 @@ impl CatalogIndex {
             .insert(package.id.clone(), package.clone());
     }
 
-    pub fn get_package(&self, id: &str) -> Option<&Package> {
-        self.id_to_package.get(id)
+    fn find_recursively_dependencies(&self, ids: HashSet<String>) -> HashSet<String> {
+        let mut res: HashSet<String> = HashSet::new();
+        for id in &ids {
+            let package = self.get_package(id);
+            res.insert(id.to_string());
+
+            if let Some(package) = package {
+                if let Some(deps) = package.dependencies {
+                    for (dep_id, _) in deps {
+                        res.insert(dep_id);
+                    }
+                }
+            }
+        }
+
+        if res == ids {
+            res
+        } else {
+            self.find_recursively_dependencies(res)
+        }
+    }
+
+    pub fn get_packages_with_dependencies(&self, ids: Vec<String>) -> Vec<Package> {
+        let mut all_ids: Vec<String> = self
+            .find_recursively_dependencies(HashSet::from_iter(ids))
+            .iter()
+            .cloned()
+            .collect();
+        all_ids.sort();
+
+        let mut res = vec![];
+        for id in all_ids {
+            let package = self.get_package(&id);
+
+            if let Some(package) = package {
+                res.push(package.to_owned());
+            } else {
+                warn!("package {id} does not exist (skipped)");
+            }
+        }
+        res
+    }
+
+    pub fn get_package(&self, id: &str) -> Option<Package> {
+        self.id_to_package.get(id).cloned()
     }
 }
