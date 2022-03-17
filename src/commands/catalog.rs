@@ -2,6 +2,7 @@ use log::{info, warn};
 use serde::Deserialize;
 use std::collections::HashMap;
 
+const TOOLCHAIN_PREFIX: &str = "Microsoft.VC.";
 const CATALOG_NAME: &str = "VisualStudio.vsman";
 const MANIFEST_ID: &str = "Microsoft.VisualStudio.Manifests.VisualStudio";
 const CHANNEL_URL: &str = "https://aka.ms/vs/17/release/channel";
@@ -48,6 +49,26 @@ impl Package {
         (self.chip.is_none() || self.chip.as_ref().unwrap() == X64)
             && (self.product_arch.is_none() || self.product_arch.as_ref().unwrap() == X64)
             && (self.machine_arch.is_none() || self.machine_arch.as_ref().unwrap() == X64)
+    }
+
+    pub fn is_toolchain(&self) -> bool {
+        self.id.starts_with(TOOLCHAIN_PREFIX)
+    }
+
+    pub fn toolchain_version(&self) -> Option<String> {
+        if !self.is_toolchain() {
+            None
+        } else {
+            Some(
+                self.id
+                    .replace(TOOLCHAIN_PREFIX, "")
+                    .split('.')
+                    .take(2)
+                    .map(|ver| ver.to_string())
+                    .collect::<Vec<_>>()
+                    .join("."),
+            )
+        }
     }
 }
 
