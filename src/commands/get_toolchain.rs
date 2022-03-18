@@ -31,7 +31,12 @@ fn download_payload(payload: &Payload, install_dir: &str) {
         _ => unimplemented!(),
     };
 
-    let path_to_file = format!("{dl_dir}/{}.{}", payload.sha256, file_ext);
+    let file_name_without_ext = Path::new(&payload.name)
+        .file_stem()
+        .unwrap()
+        .to_str()
+        .unwrap();
+    let path_to_file = format!("{dl_dir}/{}.{}", file_name_without_ext, file_ext);
     let file = Path::new(&path_to_file);
 
     let need_download = if !file.exists() {
@@ -92,10 +97,19 @@ pub fn run(toolchain_version: String, install_dir: String) {
         .flat_map(|p| p.payloads.as_ref().unwrap())
         .cloned()
         .collect();
+
     info!(
         "need to download {} payloads for {} packages",
         payloads.len(),
         packages.len()
+    );
+
+    let mut unique_payloads_name: Vec<String> = payloads.iter().map(|p| p.name.clone()).collect();
+    unique_payloads_name.dedup();
+    assert_eq!(
+        payloads.len(),
+        unique_payloads_name.len(),
+        "some payloads have same name"
     );
 
     for (index, payload) in payloads.iter().enumerate() {
