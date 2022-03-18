@@ -148,6 +148,7 @@ pub fn get_catalog() -> Catalog {
     let catalog_url = &payload.url;
 
     info!("download catalog from {catalog_url}");
+    // hash given on channel for this file is incorrect, thus, always download it
     let catalog = reqwest::blocking::get(catalog_url).unwrap().text().unwrap();
     serde_json::from_str(&catalog).unwrap()
 }
