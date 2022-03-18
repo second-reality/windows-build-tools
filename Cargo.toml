@@ -26,3 +26,6 @@ serde_json = "1.0.79"
 
 # sha256
 sha256 = "1.0.3"
+
+# parallelism
+rayon = "1.5"

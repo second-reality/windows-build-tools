@@ -1,70 +1,6 @@
 use super::catalog::{get_catalog, CatalogIndex, Package, Payload};
 use log::info;
-use std::io::Write;
-use std::path::Path;
-
-enum PayloadKind {
-    Vsix,
-    Unknown(String),
-}
-
-fn payload_kind(payload: &Payload) -> PayloadKind {
-    let extension = Path::new(&payload.url).extension();
-    match extension {
-        None => PayloadKind::Unknown("".to_string()),
-        Some(os_str) => match os_str.to_str() {
-            Some("vsix") => PayloadKind::Vsix,
-            Some(other) => PayloadKind::Unknown(other.to_string()),
-            _ => PayloadKind::Unknown("".to_string()),
-        },
-    }
-}
-
-fn download_payload(payload: &Payload, install_dir: &str) {
-    let dl_dir = format!("{install_dir}/downloads");
-    std::fs::create_dir_all(&dl_dir).expect("error creating output directory");
-
-    let kind = payload_kind(payload);
-
-    let file_ext = match kind {
-        PayloadKind::Vsix => "vsix",
-        _ => unimplemented!(),
-    };
-
-    let file_name_without_ext = Path::new(&payload.name)
-        .file_stem()
-        .unwrap()
-        .to_str()
-        .unwrap();
-    let path_to_file = format!("{dl_dir}/{}.{}", file_name_without_ext, file_ext);
-    let file = Path::new(&path_to_file);
-
-    let need_download = if !file.exists() {
-        true
-    } else {
-        let sha_existing = sha256::digest_file(file).unwrap();
-        sha_existing != payload.sha256
-    };
-
-    if !need_download {
-        return;
-    }
-
-    if file.exists() {
-        std::fs::remove_file(file).unwrap();
-    }
-    let data = reqwest::blocking::get(&payload.url)
-        .unwrap()
-        .bytes()
-        .unwrap();
-    let mut out = std::fs::File::create(file).unwrap();
-    out.write_all(&data).unwrap();
-    assert_eq!(
-        sha256::digest_file(file).unwrap(),
-        payload.sha256,
-        "sha256 of downloaded file is different from expected"
-    );
-}
+use rayon::prelude::*;
 
 pub fn find_packages_to_download(toolchain_version: &str) -> Vec<Package> {
     let catalog = get_catalog();
@@ -79,6 +15,26 @@ pub fn find_packages_to_download(toolchain_version: &str) -> Vec<Package> {
     names.dedup();
 
     catalog_index.get_packages_with_dependencies(names)
+}
+
+pub fn download_all(payloads: Vec<Payload>, dl_dir: &str) {
+    let num_payloads = payloads.len();
+    let payloads: Vec<_> = payloads
+        .par_iter()
+        .filter(|p| !p.is_downloaded(dl_dir))
+        .collect();
+    let num_not_found = payloads.len();
+    info!("need to download {num_not_found}/{num_payloads} payloads");
+
+    for (index, p) in payloads.iter().enumerate() {
+        info!("[{}/{}] {}", index + 1, num_not_found, p.name);
+        p.download(dl_dir); // NOT in parallel
+    }
+
+    // check all packages were successfully downloaded
+    payloads
+        .par_iter()
+        .for_each(|p| assert!(p.is_downloaded(dl_dir), "package not downloaded"));
 }
 
 pub fn run(toolchain_version: String, install_dir: String) {
@@ -112,8 +68,8 @@ pub fn run(toolchain_version: String, install_dir: String) {
         "some payloads have same name"
     );
 
-    for (index, payload) in payloads.iter().enumerate() {
-        info!("[{}/{}] {}", index + 1, payloads.len(), payload.name);
-        download_payload(payload, &install_dir);
-    }
+    let dl_dir = format!("{install_dir}/downloads");
+    std::fs::create_dir_all(&dl_dir).expect("error creating output directory");
+
+    download_all(payloads, &dl_dir);
 }

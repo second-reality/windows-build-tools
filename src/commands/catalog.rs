@@ -1,6 +1,8 @@
 use log::{info, warn};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
+use std::io::Write;
+use std::path::{Path, PathBuf};
 
 const TOOLCHAIN_PREFIX: &str = "Microsoft.VC.";
 const CATALOG_NAME: &str = "VisualStudio.vsman";
@@ -15,6 +17,33 @@ pub struct Payload {
     pub name: String,
     pub url: String,
     pub sha256: String,
+}
+
+impl Payload {
+    pub fn path(&self, dl_dir: &str) -> PathBuf {
+        let path = format!("{dl_dir}/{}", self.name);
+        Path::new(&path).to_path_buf()
+    }
+
+    pub fn is_downloaded(&self, dl_dir: &str) -> bool {
+        let file = self.path(dl_dir);
+        if !file.exists() {
+            false
+        } else {
+            let sha_existing = sha256::digest_file(file).unwrap();
+            sha_existing == self.sha256
+        }
+    }
+
+    pub fn download(&self, dl_dir: &str) {
+        let file = self.path(dl_dir);
+        if file.exists() {
+            std::fs::remove_file(&file).unwrap();
+        }
+        let data = reqwest::blocking::get(&self.url).unwrap().bytes().unwrap();
+        let mut out = std::fs::File::create(&file).unwrap();
+        out.write_all(&data).unwrap();
+    }
 }
 
 #[derive(Deserialize, Debug)]
