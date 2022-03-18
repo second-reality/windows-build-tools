@@ -1,4 +1,4 @@
-use super::catalog::{get_catalog, CatalogIndex, Package, Payload};
+use crate::catalog::{get_catalog, CatalogIndex, Package, Payload};
 use log::info;
 use rayon::prelude::*;
 
