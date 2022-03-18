@@ -24,14 +24,20 @@ pub fn download_all(payloads: Vec<Payload>, dl_dir: &str) {
         .filter(|p| !p.is_downloaded(dl_dir))
         .collect();
     let num_not_found = payloads.len();
-    info!("need to download {num_not_found}/{num_payloads} payloads");
+
+    if num_not_found == 0 {
+        info!("all packages are already downloaded");
+        return;
+    } else {
+        info!("need to download {num_not_found}/{num_payloads} payloads");
+    }
 
     for (index, p) in payloads.iter().enumerate() {
         info!("[{}/{}] {}", index + 1, num_not_found, p.name);
         p.download(dl_dir); // NOT in parallel
     }
 
-    // check all packages were successfully downloaded
+    info!("check packages downloaded");
     payloads
         .par_iter()
         .for_each(|p| assert!(p.is_downloaded(dl_dir), "package not downloaded"));

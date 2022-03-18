@@ -28,11 +28,16 @@ impl Payload {
     pub fn is_downloaded(&self, dl_dir: &str) -> bool {
         let file = self.path(dl_dir);
         if !file.exists() {
-            false
-        } else {
-            let sha_existing = sha256::digest_file(file).unwrap();
-            sha_existing == self.sha256
+            return false;
         }
+
+        use sha2::{Digest, Sha256};
+
+        let mut hasher = Sha256::new();
+        let mut file = std::fs::File::open(&file).unwrap();
+        std::io::copy(&mut file, &mut hasher).unwrap();
+        let sha_existing = format!("{:x}", hasher.finalize());
+        sha_existing == self.sha256
     }
 
     pub fn download(&self, dl_dir: &str) {
