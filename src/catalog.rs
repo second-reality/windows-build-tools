@@ -41,6 +41,10 @@ impl Payload {
     }
 
     pub fn download(&self, dl_dir: &str) {
+        if self.is_downloaded(dl_dir) {
+            return;
+        }
+
         let file = self.path(dl_dir);
         if file.exists() {
             std::fs::remove_file(&file).unwrap();
@@ -48,6 +52,11 @@ impl Payload {
         let data = reqwest::blocking::get(&self.url).unwrap().bytes().unwrap();
         let mut out = std::fs::File::create(&file).unwrap();
         out.write_all(&data).unwrap();
+
+        assert!(
+            self.is_downloaded(dl_dir),
+            "package downloaded hash is incorrect"
+        )
     }
 }
 

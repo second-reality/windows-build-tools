@@ -36,11 +36,6 @@ pub fn download_all(payloads: Vec<Payload>, dl_dir: &str) {
         info!("[{}/{}] {}", index + 1, num_not_found, p.name);
         p.download(dl_dir); // NOT in parallel
     }
-
-    info!("check packages downloaded");
-    payloads
-        .par_iter()
-        .for_each(|p| assert!(p.is_downloaded(dl_dir), "package not downloaded"));
 }
 
 pub fn run(toolchain_version: String, install_dir: String) {
