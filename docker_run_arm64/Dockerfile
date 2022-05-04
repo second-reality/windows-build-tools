@@ -8,7 +8,7 @@ RUN apt update && apt install -y clang build-essential llvm lld
 
 RUN apt update && apt install -y wget
 
-ENV WINE_VERSION=7.4
+ENV WINE_VERSION=7.7
 RUN cd /tmp && echo "Download wine-${WINE_VERSION}..." && \
     wget -q https://github.com/wine-mirror/wine/archive/refs/tags/wine-${WINE_VERSION}.tar.gz && \
     tar xf wine-${WINE_VERSION}.tar.gz && cd wine-wine-${WINE_VERSION} && \
